@@ -1,0 +1,202 @@
+/* Testing Hardware for TEE1010
+   By John Melki-Wegner (aka Expensive Notes)
+
+*/
+// === MIDI ==================================================================== MIDI
+#include <MIDI.h>
+MIDI_CREATE_INSTANCE(HardwareSerial, Serial7, MIDI);
+int channel = 1;
+
+// === Variables =============================================================== Variables
+
+int reading;           // the current reading from the input pin
+//Pots :  Analogue pins
+int potPin [6] = {A0, A8, A14, A15, A16, A17};   // Input pins from the potentiometers
+int potVals [6]; //input values from pots
+
+#define foot1 0
+#define foot2 1
+#define foot3 2
+#define foot4 3
+#define foot5 4
+#define foot6 5
+#define foot7 30
+#define foot8 31
+#define foot9 32
+#define foot10 33
+#define footUp 36
+#define footDown 37
+
+#define additionalSwitch1 26
+#define additionalSwitch2 27
+#define additionalSwitch3 34
+#define numberSwitches 15
+
+//=== Oled Screen ================================================================ Oled Screen
+#include <Adafruit_SSD1306.h>
+
+#define SCREEN_WIDTH 128 // OLED display width, in pixels
+#define SCREEN_HEIGHT 64 // OLED display height, in pixels
+#define OLED_RESET     4 // Reset pin # 
+#define SCREEN_ADDRESS 0x3C // Found using scanner
+
+//Changed Wire to Wire2 for SCL2 and SDA2 Yay!
+Adafruit_SSD1306 display(SCREEN_WIDTH, SCREEN_HEIGHT, &Wire2, OLED_RESET);
+
+// === MIDI ========================================================================= MIDI
+byte stopMIDI = 0xfc; //MIDI stop
+byte midi_clock = 0xf8;
+int note = 60;
+int BPM = 250;//Beats per Minute maximum?
+int waitTime = 40; //Time between sending MIDI clock
+int spareTime = 40; //Time left after processes are done that needs to be padded/wasted while waiting for mext beat/note
+
+// === Setup ======================================================================== Setup
+
+void setup()
+{
+  //USB Serial for debugging
+  Serial.begin(9600);
+
+  //Set Pins
+  pinMode(foot1, INPUT_PULLUP);
+  pinMode(foot2, INPUT_PULLUP);
+  pinMode(foot3, INPUT_PULLUP);
+  pinMode(foot4, INPUT_PULLUP);
+  pinMode(foot5, INPUT_PULLUP);
+  pinMode(foot6, INPUT_PULLUP);
+  pinMode(foot7, INPUT_PULLUP);
+  pinMode(foot8, INPUT_PULLUP);
+  pinMode(foot9, INPUT_PULLUP);
+  pinMode(foot10, INPUT_PULLUP);
+  pinMode(footUp, INPUT_PULLUP);
+  pinMode(footDown, INPUT_PULLUP);
+  pinMode(additionalSwitch1, INPUT_PULLUP);
+  pinMode(additionalSwitch2, INPUT_PULLUP);
+  pinMode(additionalSwitch3, INPUT_PULLUP);
+
+  //MIDI Serial in and out
+  Serial7.begin(31250); //MIDI baud rate
+  Serial7.write(stopMIDI); // just in case
+
+  MIDI.begin(MIDI_CHANNEL_OMNI);                      // Launch MIDI and listen to channel 1
+
+  //--- Screen ------------------------------------------------
+  //   SSD1306_SWITCHCAPVCC = generate display voltage from 3.3V internally
+  if (!display.begin(SSD1306_SWITCHCAPVCC, SCREEN_ADDRESS)) {
+    Serial.println(F("SSD1306 allocation failed"));
+    for (;;); // Don't proceed, loop forever
+  }
+}
+
+// === Loop ======================================================================== Loop
+
+void loop()
+{
+  int t1 = millis();
+  readPots();
+  readSwitches();
+  sendMIDInote();
+  showScreen();
+
+  int t2 = millis();
+  Serial.print("\tTime to Read Switches etc. :\t");
+  Serial.print(t2 - t1);
+  Serial.print("\tSpare time:\t");
+  spareTime = waitTime - (t2 - t1);
+  Serial.print(spareTime);
+  Serial.print("\tMIDI in?? ");
+  while (t2 - t1 < waitTime) {
+    if (MIDI.read()) {
+      byte type = MIDI.getType();
+      Serial.print("\t");
+      Serial.print(type);
+    }
+    t2 = millis();
+  }
+  Serial7.write(midi_clock);
+  Serial.print("\t");
+  Serial.println();
+}
+
+// === ============================================================================
+
+void showScreen() {
+  display.clearDisplay();
+  display.setTextSize(2);
+  display.setTextColor(SSD1306_WHITE); // Draw white text
+  display.setCursor(15, 0);
+  display.println(BPM);
+  display.setCursor(15, 20);
+  display.println(spareTime);
+  display.display();
+}
+
+void sendMIDInote() {
+  MIDI.sendNoteOff(note, 100, channel);
+  note++;
+  if (note > 65) note = 60;
+  MIDI.sendNoteOn(note, 100, channel);
+}
+
+void readPots() {
+  for (int i = 0; i < 6; i++) {
+    potVals[i] = analogRead(potPin[i]);
+    Serial.print(potPin[i]);
+    Serial.print("=");
+    Serial.print(potVals[i]);
+    Serial.print("  ");
+  }
+  BPM = map( potVals[0] , 0, 1023, 20, 250);
+  waitTime = int(60000 / BPM / 6); //Time between MIDI clock out
+}
+
+void readSwitches() {
+  int switchValue;
+  switchValue = digitalRead(foot1);
+  if (switchValue == LOW) Serial.print(" foot1 ");
+  Serial.print(switchValue);
+  switchValue = digitalRead(foot2);
+  if (switchValue == LOW) Serial.print(" foot2 ");
+  Serial.print(switchValue);
+  switchValue = digitalRead(foot3);
+  if (switchValue == LOW) Serial.print(" foot3 ");
+  Serial.print(switchValue);
+  switchValue = digitalRead(foot4);
+  if (switchValue == LOW) Serial.print(" foot4 ");
+  Serial.print(switchValue);
+  switchValue = digitalRead(foot5);
+  if (switchValue == LOW) Serial.print(" foot5 ");
+  Serial.print(switchValue);
+  switchValue = digitalRead(foot6);
+  if (switchValue == LOW) Serial.print(" foot6 ");
+  Serial.print(switchValue);
+  switchValue = digitalRead(foot7);
+  if (switchValue == LOW) Serial.print(" foot7 ");
+  Serial.print(switchValue);
+  switchValue = digitalRead(foot8);
+  if (switchValue == LOW) Serial.print(" foot8 ");
+  Serial.print(switchValue);
+  switchValue = digitalRead(foot9);
+  if (switchValue == LOW) Serial.print(" foot9 ");
+  Serial.print(switchValue);
+  switchValue = digitalRead(foot10);
+  if (switchValue == LOW) Serial.print(" foot10");
+  Serial.print(switchValue);
+  switchValue = digitalRead(footUp);
+  if (switchValue == LOW) Serial.print(" footUp");
+  Serial.print(switchValue);
+  switchValue = digitalRead(footDown);
+  if (switchValue == LOW) Serial.print(" footDown");
+  Serial.print(switchValue);
+  switchValue = digitalRead(additionalSwitch1);
+  if (switchValue == LOW) Serial.print(" add Switch1 ");
+  Serial.print(switchValue);
+  switchValue = digitalRead(additionalSwitch2);
+  if (switchValue == LOW) Serial.print(" add Switch2 ");
+  Serial.print(switchValue);
+  switchValue = digitalRead(additionalSwitch3);
+  if (switchValue == LOW) Serial.print(" add Switch3 ");
+  Serial.print(switchValue);
+ // Serial.println();
+}
