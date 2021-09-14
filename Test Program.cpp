@@ -11,26 +11,15 @@ int channel = 1;
 
 int reading;           // the current reading from the input pin
 //Pots :  Analogue pins
-int potPin [6] = {A0, A8, A14, A15, A16, A17};   // Input pins from the potentiometers
-int potVals [6]; //input values from pots
+const int potPin[] = {A0, A8, A14, A15, A16, A17};   // Input pins from the potentiometers
+int potVals[6]; //input values from pots
 
-#define foot1 0
-#define foot2 1
-#define foot3 2
-#define foot4 3
-#define foot5 4
-#define foot6 5
-#define foot7 30
-#define foot8 31
-#define foot9 32
-#define foot10 33
-#define footUp 36
-#define footDown 37
+const int foot[] = {0, 1, 2, 3, 4, 5, 30, 31, 32, 33, 36, 37, 26, 27, 34}; // Note that the last five positions represent footUp, footDown and the three additional switches respectively
+const int additionalSwitch[] = {26, 27, 34};
 
-#define additionalSwitch1 26
-#define additionalSwitch2 27
-#define additionalSwitch3 34
-#define numberSwitches 15
+const char footPrint[][12] = {" foot1 ", " foot2 ", " foot3 ", " foot4 ", " foot5 ", " foot6 ", " foot7 ", " foot8 ", " foot9 ", " foot10 ", " footUp ", " footDown ", " addSwitch1 ", " addSwitch2 ", " addSwitch3 "};
+
+// #define numberSwitches 15 // This appears to be unused, just commenting up
 
 //=== Oled Screen ================================================================ Oled Screen
 #include <Adafruit_SSD1306.h>
@@ -58,22 +47,7 @@ void setup()
   //USB Serial for debugging
   Serial.begin(9600);
 
-  //Set Pins
-  pinMode(foot1, INPUT_PULLUP);
-  pinMode(foot2, INPUT_PULLUP);
-  pinMode(foot3, INPUT_PULLUP);
-  pinMode(foot4, INPUT_PULLUP);
-  pinMode(foot5, INPUT_PULLUP);
-  pinMode(foot6, INPUT_PULLUP);
-  pinMode(foot7, INPUT_PULLUP);
-  pinMode(foot8, INPUT_PULLUP);
-  pinMode(foot9, INPUT_PULLUP);
-  pinMode(foot10, INPUT_PULLUP);
-  pinMode(footUp, INPUT_PULLUP);
-  pinMode(footDown, INPUT_PULLUP);
-  pinMode(additionalSwitch1, INPUT_PULLUP);
-  pinMode(additionalSwitch2, INPUT_PULLUP);
-  pinMode(additionalSwitch3, INPUT_PULLUP);
+  for (int cFoot : foot) pinMode(cFoot, INPUT_PULLUP); // Sets every pin in foot to
 
   //MIDI Serial in and out
   Serial7.begin(31250); //MIDI baud rate
@@ -152,51 +126,5 @@ void readPots() {
 }
 
 void readSwitches() {
-  int switchValue;
-  switchValue = digitalRead(foot1);
-  if (switchValue == LOW) Serial.print(" foot1 ");
-  Serial.print(switchValue);
-  switchValue = digitalRead(foot2);
-  if (switchValue == LOW) Serial.print(" foot2 ");
-  Serial.print(switchValue);
-  switchValue = digitalRead(foot3);
-  if (switchValue == LOW) Serial.print(" foot3 ");
-  Serial.print(switchValue);
-  switchValue = digitalRead(foot4);
-  if (switchValue == LOW) Serial.print(" foot4 ");
-  Serial.print(switchValue);
-  switchValue = digitalRead(foot5);
-  if (switchValue == LOW) Serial.print(" foot5 ");
-  Serial.print(switchValue);
-  switchValue = digitalRead(foot6);
-  if (switchValue == LOW) Serial.print(" foot6 ");
-  Serial.print(switchValue);
-  switchValue = digitalRead(foot7);
-  if (switchValue == LOW) Serial.print(" foot7 ");
-  Serial.print(switchValue);
-  switchValue = digitalRead(foot8);
-  if (switchValue == LOW) Serial.print(" foot8 ");
-  Serial.print(switchValue);
-  switchValue = digitalRead(foot9);
-  if (switchValue == LOW) Serial.print(" foot9 ");
-  Serial.print(switchValue);
-  switchValue = digitalRead(foot10);
-  if (switchValue == LOW) Serial.print(" foot10");
-  Serial.print(switchValue);
-  switchValue = digitalRead(footUp);
-  if (switchValue == LOW) Serial.print(" footUp");
-  Serial.print(switchValue);
-  switchValue = digitalRead(footDown);
-  if (switchValue == LOW) Serial.print(" footDown");
-  Serial.print(switchValue);
-  switchValue = digitalRead(additionalSwitch1);
-  if (switchValue == LOW) Serial.print(" add Switch1 ");
-  Serial.print(switchValue);
-  switchValue = digitalRead(additionalSwitch2);
-  if (switchValue == LOW) Serial.print(" add Switch2 ");
-  Serial.print(switchValue);
-  switchValue = digitalRead(additionalSwitch3);
-  if (switchValue == LOW) Serial.print(" add Switch3 ");
-  Serial.print(switchValue);
- // Serial.println();
+  for (int iter = 0; iter < 16; iter++) if (digitalRead(foot[iter]) == LOW) Serial.print(footPrint[iter]);
 }
